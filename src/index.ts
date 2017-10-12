@@ -11,6 +11,7 @@ import * as apac from 'apac'
 
 export { IKey,
          IProduct,
+         IInventory,
          IProductMap } from './types'
 
 

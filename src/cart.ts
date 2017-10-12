@@ -2,21 +2,26 @@ import { IInventory } from './types'
 import { Result,
          IResult } from '@mcrowe/result'
 
-
 export function parse(data): IResult<IInventory> {
   try {
 
     if (isError(data)) {
-      const msg = parseError(data).code
+      const msg = parseError(data.CartCreateErrorResponse).code
       const error = normalizeAmazonError(msg)
       return Result.Error(error)
     }
 
     const cart = getCart(data)
 
+    if (!cart.CartItems && isCartError(cart)) {
+      const msg = parseError(cart.Request.Errors).code
+      const error = normalizeAmazonError(msg)
+      return Result.Error(error)
+    }
+    
     const inventory = getInventory(cart)
 
-    return Result.OK({inventory})
+    return Result.OK({ inventory })
 
   } catch (e) {
     console.error('parse_error ' + e)
@@ -31,20 +36,26 @@ function isError(data) {
 }
 
 
+function isCartError(data) {
+  return data.Request.Errors
+}
+
+
 function getCart(data) {
   return data.CartCreateResponse.Cart
 }
 
 
-function getInventory(data) {
-  const q = data.CartItems.CartItem.Quantity
+function getInventory(cart) {
+  const q = cart.CartItems.CartItem.Quantity
 
   return q && parseInt(q)
 }
 
 
 function parseError(data) {
-  const error = data.CartCreateErrorResponse.Error
+  const error = data.Error
+
   return {
     code: error.Code,
     message: error.Message
@@ -61,9 +72,10 @@ function normalizeAmazonError(msg: string): string {
       return 'invalid_key'
     case 'RequestThrottled':
       return 'aws_throttle'
-    case 'AWS.ECommerceService.InvalidQuantity':
     case 'AWS.ECommerceService.CartInfoMismatch':
       return 'cart_error'
+    case 'AWS.ECommerceService.ItemNotEligibleForCart':
+      return 'unavailable_via_api'
     case 'AWS.InternalError':
       return 'aws_server_error'
     default:
