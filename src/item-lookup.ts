@@ -3,12 +3,15 @@ import { IProductMap } from './types'
 import { Result,
          IResult } from '@mcrowe/result'
 
-
 export function parse(data): IResult<IProductMap> {
   try {
 
     if (isError(data)) {
-      const msg = parseError(data).code
+      const msg = parseError(data.ItemLookupErrorResponse).code
+      const error = normalizeAmazonError(msg)
+      return Result.Error(error)
+    } else if (isRequestError(data)) {
+      const msg = parseError(data.ItemLookupResponse.Items.Request.Errors).code
       const error = normalizeAmazonError(msg)
       return Result.Error(error)
     }
@@ -39,6 +42,11 @@ function isError(data) {
 }
 
 
+function isRequestError(data) {
+  return data.ItemLookupResponse.Items ? data.ItemLookupResponse.Items.Request.Errors : false
+}
+
+
 function getItems(data) {
   const items = data.ItemLookupResponse.Items.Item
 
@@ -51,7 +59,7 @@ function getItems(data) {
 
 
 function parseError(data) {
-  const error = data.ItemLookupErrorResponse.Error
+  const error = data.Error
   return {
     code: error.Code,
     message: error.Message
@@ -68,6 +76,8 @@ function normalizeAmazonError(msg: string): string {
       return 'invalid_key'
     case 'RequestThrottled':
       return 'aws_throttle'
+    case 'AWS.InvalidParameterValue':
+      return 'unavailable_via_api'
     case 'AWS.InternalError':
       return 'aws_server_error'
     default:

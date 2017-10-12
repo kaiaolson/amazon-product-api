@@ -26,7 +26,6 @@ export function parse(data): IResult<IInventory> {
   } catch (e) {
     console.error('parse_error ' + e)
     return Result.Error('parse_error')
-
   }
 }
 
@@ -75,6 +74,8 @@ function normalizeAmazonError(msg: string): string {
     case 'AWS.ECommerceService.CartInfoMismatch':
       return 'cart_error'
     case 'AWS.ECommerceService.ItemNotEligibleForCart':
+      return 'unavailable'
+    case 'AWS.ECommerceService.ItemNotAccessible':
       return 'unavailable_via_api'
     case 'AWS.InternalError':
       return 'aws_server_error'
