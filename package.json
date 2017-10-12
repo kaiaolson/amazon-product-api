@@ -1,6 +1,6 @@
 {
   "name": "@mcrowe/amazon-product-api",
-  "version": "",
+  "version": "0.0.2",
   "description": "Amazon Product Api Typescript client",
   "author": "Mitch Crowe <code@mitchcrowe.com> (http://www.mitchcrowe.com)",
   "license": "ISC",
